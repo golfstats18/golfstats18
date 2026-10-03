@@ -293,7 +293,6 @@ function AuthScreen(){
   const [mode,setMode]=useState("login");
   const [email,setEmail]=useState(()=>ls("gs18_email",""));
   const [password,setPassword]=useState(()=>ls("gs18_pw",""));
-  const [code,setCode]=useState("");
   const [rememberMe,setRememberMe]=useState(()=>!!ls("gs18_email",null));
   const [showInstall,setShowInstall]=useState(false);
   const [msg,setMsg]=useState("");
@@ -308,17 +307,11 @@ function AuthScreen(){
         if(error){setMsg(error.message);}
         else{if(rememberMe){lss("gs18_email",email);lss("gs18_pw",password);}else{lsr("gs18_email");lsr("gs18_pw");}}
       } else if(mode==="signup"){
-        const tc=code.trim().toUpperCase();
-        if(!tc){setMsg("An invite code is required.");setLoading(false);return;}
-        const {data:row,error:ce}=await sb.from("invite_codes").select("*").eq("code",tc).single();
-        if(ce||!row){setMsg("Invalid invite code.");setLoading(false);return;}
-        if(row.used_count>=row.max_uses){setMsg("This invite code has reached its limit.");setLoading(false);return;}
         const {data:signUpData,error:se}=await sb.auth.signUp({email,password});
         if(se){setMsg(se.message);setLoading(false);return;}
         if(signUpData?.user){
           await sb.auth.updateUser({data:{trial_start:new Date().toISOString()}});
         }
-        await sb.from("invite_codes").update({used_count:row.used_count+1}).eq("code",tc);
         setMsg("Account created! Sign in now.");setMode("login");
       } else {
         const {error}=await sb.auth.resetPasswordForEmail(email);
@@ -339,7 +332,6 @@ function AuthScreen(){
           <div style={{fontSize:11,letterSpacing:4,color:WHITE,textTransform:"uppercase",marginBottom:16}}>{mode==="login"?"Sign In":mode==="signup"?"Create Account":"Reset Password"}</div>
           <input value={email} onChange={e=>setEmail(e.target.value)} placeholder="Email address" type="email" style={FI}/>
           {mode!=="reset"&&<input value={password} onChange={e=>setPassword(e.target.value)} placeholder="Password" type="password" style={FI}/>}
-          {mode==="signup"&&<input value={code} onChange={e=>setCode(e.target.value)} placeholder="Invite code" style={{...FI,textTransform:"uppercase",letterSpacing:3}}/>}
           {mode==="login"&&(
             <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
               <input type="checkbox" id="rem" checked={rememberMe} onChange={e=>setRememberMe(e.target.checked)} style={{width:18,height:18,accentColor:GREEN,cursor:"pointer"}}/>
