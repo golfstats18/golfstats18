@@ -33,7 +33,7 @@ const HOLES = Array.from({ length: 18 }, (_, i) => i + 1);
 const DEFAULT_PARS = {1:4,2:4,3:3,4:5,5:4,6:3,7:4,8:5,9:4,10:4,11:4,12:3,13:5,14:4,15:3,16:4,17:5,18:4};
 const DEFAULT_SI   = {1:1,2:11,3:15,4:3,5:7,6:17,7:9,8:5,9:13,10:2,11:12,12:16,13:4,14:8,15:18,16:10,17:6,18:14};
 const FWY_COLOR = { L:"#ef4444", R:"#f97316", Hit:"#4ade80" };
-const GRN_COLOR = { L:"#ef4444", R:"#f97316", S:"#facc15", "L+":"#c084fc", Hit:"#4ade80" };
+const GRN_COLOR = { L:"#ef4444", R:"#f97316", S:"#facc15", "L+":"#c084fc", Hit:"#4ade80", LU:"#60a5fa" };
 const CARD="#162816", BORDER="#2d5a2d", GREEN="#4ade80", YELLOW="#facc15", WHITE="#ffffff", BG="#f0f4f0", DARK="#0d1f0d";
 const STRIPE_PK = "pk_live_51UKuubPAAj84HdL4w9qnH6wOpa6RPqTuqoBr2p8RQDZzlRtD69RYEQo3drPPRGpBLck8wDB9UCbIHBlhiPaS4UZ500tjJHPlPc";
 const STRIPE_PRICE_ID = "price_1UL0dNPAAj84HdL4hR9ygGnN";
@@ -97,6 +97,8 @@ function calcStats(fwy,fwy2,grn,putts,scores,nr,ob,hazard,updown,pars,hcp,si){
   const puttArr=Object.values(putts).map(Number).filter(n=>!isNaN(n)&&n>0);
   const totalPutts=puttArr.reduce((a,b)=>a+b,0);
   const avgPutts=puttArr.length?(totalPutts/puttArr.length).toFixed(1):"—";
+  const threePuttHoles=puttArr.filter(n=>n>=3).length;
+  const grnLayup=Object.values(grn).map(grnArr).filter(v=>v.includes("LU")).length;
   let totalScore=0,totalPar=0,holesScored=0,totalStableford=0;
   const holeDiffs={},holeSF={};
   HOLES.forEach(h=>{
@@ -118,7 +120,7 @@ function calcStats(fwy,fwy2,grn,putts,scores,nr,ob,hazard,updown,pars,hcp,si){
   return {
     fwyHit,fwyL,fwyR,fwyTotal,fwy2Hit,fwy2L,fwy2R,fwy2Total,
     grnHit,grnL,grnR,grnS,grnLong,grnTotal,
-    totalPutts,avgPutts,
+    totalPutts,avgPutts,threePuttHoles,grnLayup,
     holesPlayed:Math.max(fwyTotal,grnTotal,puttArr.length,holesScored),
     totalScore,totalPar,scoreDiff:holesScored>0?totalScore-totalPar:null,
     holesScored,holeDiffs,holeSF,totalStableford,
@@ -238,6 +240,12 @@ function StatsPanel({s}){
           <div style={{fontSize:24,color:"#4ade80bb"}}>{s.grnHit}</div>
         </div>
         {s.grnTotal>0&&<div style={{marginTop:14,height:8,borderRadius:4,background:"#1a3a1a",display:"flex",overflow:"hidden"}}><div style={{width:pct(s.grnL,s.grnTotal),background:"#ef4444",transition:"width 0.5s"}}/><div style={{width:pct(s.grnS,s.grnTotal),background:"#facc15",transition:"width 0.5s"}}/><div style={{width:pct(s.grnHit,s.grnTotal),background:"#4ade80",transition:"width 0.5s"}}/><div style={{width:pct(s.grnLong,s.grnTotal),background:"#c084fc",transition:"width 0.5s"}}/><div style={{width:pct(s.grnR,s.grnTotal),background:"#f97316",transition:"width 0.5s"}}/></div>}
+        {s.grnLayup>0&&(
+          <div style={{marginTop:10,background:"#60a5fa22",border:"1px solid #60a5fa44",borderRadius:10,padding:"10px 14px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <div style={{fontSize:10,letterSpacing:2,color:WHITE,textTransform:"uppercase"}}>Lay-Up (green not on)</div>
+            <div style={{fontSize:20,fontWeight:"bold",color:"#60a5fa"}}>{s.grnLayup}</div>
+          </div>
+        )}
       </Card>
       {(s.totalOB>0||s.totalHazard>0||s.udChances>0)&&(
         <Card>
@@ -273,7 +281,7 @@ function StatsPanel({s}){
       {!s.rounds&&(
         <Card>
           <div style={{fontSize:11,letterSpacing:4,color:WHITE,textTransform:"uppercase",marginBottom:16}}>Putting</div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:s.threePuttHoles>0?12:0}}>
             <div style={{textAlign:"center",background:"#4ade8022",border:"1px solid #4ade8044",borderRadius:10,padding:16}}>
               <div style={{fontSize:26,fontWeight:"bold",color:WHITE}}>{s.totalPutts||"—"}</div>
               <div style={{fontSize:10,letterSpacing:3,color:"#86efac",textTransform:"uppercase",marginTop:4}}>Total Putts</div>
@@ -283,6 +291,15 @@ function StatsPanel({s}){
               <div style={{fontSize:10,letterSpacing:3,color:"#86efac",textTransform:"uppercase",marginTop:4}}>Avg / Hole</div>
             </div>
           </div>
+          {s.threePuttHoles>0&&(
+            <div style={{background:"#ef444422",border:"1px solid #ef444444",borderRadius:10,padding:"12px 16px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <div>
+                <div style={{fontSize:10,letterSpacing:2,color:WHITE,textTransform:"uppercase",marginBottom:3}}>3-Putt Holes</div>
+                <div style={{fontSize:11,color:"#ef9999"}}>3 or more putts</div>
+              </div>
+              <div style={{fontSize:26,fontWeight:"bold",color:"#ef4444"}}>{s.threePuttHoles}</div>
+            </div>
+          )}
         </Card>
       )}
     </div>
@@ -530,6 +547,7 @@ function App(){
   const [showSaveCourse,setShowSaveCourse]=useState(false);
   const [newCourseName,setNewCourseName]=useState("");
   const [showCourseList,setShowCourseList]=useState(false);
+  const [editingRoundId,setEditingRoundId]=useState(null);
 
   const checkTrial=(s)=>{
     if(!s?.user)return;
@@ -594,13 +612,33 @@ function App(){
 
   const doSave=async()=>{
     if(stats.holesScored===0&&stats.fwyTotal===0){setSaveMsg("Nothing to save yet!");setTimeout(()=>setSaveMsg(""),3000);return;}
-    const round={user_id:session.user.id,date:new Date().toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"}),course:courseName||"Unnamed Course",stats,data:{fwy,fwy2,grn,putts,scores,nr,ob,hazard,updown,pars,handicap,si}};
-    const {data,error}=await sb.from("rounds").insert(round).select().single();
-    if(error){setSaveMsg("Error saving - try again.");setTimeout(()=>setSaveMsg(""),3000);return;}
-    setSavedRounds(p=>[data,...p]);
-    setSaveMsg("Round saved to My Stats!");
+    const roundData={user_id:session.user.id,course:courseName||"Unnamed Course",stats,data:{fwy,fwy2,grn,putts,scores,nr,ob,hazard,updown,pars,handicap,si}};
+    if(editingRoundId){
+      const {data,error}=await sb.from("rounds").update(roundData).eq("id",editingRoundId).select().single();
+      if(error){setSaveMsg("Error updating - try again.");setTimeout(()=>setSaveMsg(""),3000);return;}
+      setSavedRounds(p=>p.map(r=>r.id===editingRoundId?data:r));
+      setSaveMsg("Round updated!");
+      setEditingRoundId(null);
+    } else {
+      const round={...roundData,date:new Date().toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"})};
+      const {data,error}=await sb.from("rounds").insert(round).select().single();
+      if(error){setSaveMsg("Error saving - try again.");setTimeout(()=>setSaveMsg(""),3000);return;}
+      setSavedRounds(p=>[data,...p]);
+      setSaveMsg("Round saved to My Stats!");
+    }
     setTimeout(()=>setSaveMsg(""),3000);
     clearRound();
+  };
+
+  const doEditRound=(r)=>{
+    const d=r.data||{};
+    setFwy(d.fwy||{});setFwy2(d.fwy2||{});setGrn(d.grn||{});setPutts(d.putts||{});
+    setScores(d.scores||{});setNr(d.nr||{});setOb(d.ob||{});setHazard(d.hazard||{});
+    setUpdown(d.updown||{});setPars(d.pars||DEFAULT_PARS);setSi(d.si||DEFAULT_SI);
+    setCourseName(r.course||"");setHandicap(d.handicap||"");
+    setEditingRoundId(r.id);
+    setViewRound(null);
+    setActiveTab("input");
   };
 
   const doDelete=async(id)=>{await sb.from("rounds").delete().eq("id",id);setSavedRounds(p=>p.filter(r=>r.id!==id));setConfirmDelete(null);setViewRound(null);};
@@ -611,7 +649,8 @@ function App(){
 
   const shareRound=(r)=>{
     const s=r.stats;
-    const txt=["Golf Stats 18 - Round Summary","Course: "+r.course,"Date: "+r.date,"----------------","Score: "+(s.totalScore||"—")+(s.scoreDiff!=null?" ("+(s.scoreDiff>0?"+":"")+s.scoreDiff+")":""),s.totalStableford?"Stableford: "+s.totalStableford+" pts":"","----------------","Fairways: "+s.fwyHit+"/"+s.fwyTotal+" ("+pct(s.fwyHit,s.fwyTotal)+")","GIR: "+s.grnHit+"/"+s.grnTotal+" ("+pct(s.grnHit,s.grnTotal)+")","Putts: "+s.totalPutts+" (avg "+s.avgPutts+")","Up & Down: "+(s.udChances>0?s.udGot+"/"+s.udChances+" ("+Math.round((s.udGot/s.udChances)*100)+"%)":"n/a"),"OOB: "+s.totalOB+" | Hazard: "+s.totalHazard,"----------------","Eagles: "+s.eagles+" Birdies: "+s.birdies+" Pars: "+s.parsCount,"Bogeys: "+s.bogeys+" Doubles: "+s.doubles+" Worse: "+s.worse,"----------------","Tracked with Golf Stats 18","golfstats18.netlify.app"].filter(Boolean).join("\n");
+    const puttLine="Putts: "+s.totalPutts+" (avg "+s.avgPutts+")"+(s.threePuttHoles>0?" | 3-putts: "+s.threePuttHoles+" hole"+(s.threePuttHoles!==1?"s":""):"");
+    const txt=["Golf Stats 18 - Round Summary","Course: "+r.course,"Date: "+r.date,"----------------","Score: "+(s.totalScore||"—")+(s.scoreDiff!=null?" ("+(s.scoreDiff>0?"+":"")+s.scoreDiff+")":""),s.totalStableford?"Stableford: "+s.totalStableford+" pts":"","----------------","Fairways: "+s.fwyHit+"/"+s.fwyTotal+" ("+pct(s.fwyHit,s.fwyTotal)+")","GIR: "+s.grnHit+"/"+s.grnTotal+" ("+pct(s.grnHit,s.grnTotal)+")"+(s.grnLayup>0?" | Lay-ups: "+s.grnLayup:""),puttLine,"Up & Down: "+(s.udChances>0?s.udGot+"/"+s.udChances+" ("+Math.round((s.udGot/s.udChances)*100)+"%)":"n/a"),"OOB: "+s.totalOB+" | Hazard: "+s.totalHazard,"----------------","Eagles: "+s.eagles+" Birdies: "+s.birdies+" Pars: "+s.parsCount,"Bogeys: "+s.bogeys+" Doubles: "+s.doubles+" Worse: "+s.worse,"----------------","Tracked with Golf Stats 18","golfstats18.netlify.app"].filter(Boolean).join("\n");
     if(navigator.share){navigator.share({title:"Golf Stats 18 - "+r.course,text:txt});}
     else{navigator.clipboard&&navigator.clipboard.writeText(txt).then(()=>alert("Copied!"));}
   };
@@ -722,7 +761,16 @@ function App(){
 
         {activeTab==="input"&&(
           <div>
-            {Object.keys(scores).length>0&&(
+            {editingRoundId&&(
+              <div style={{background:"#1a2f4a",border:"1px solid #3b6ea8",borderRadius:10,padding:"10px 16px",marginBottom:12,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                <div>
+                  <div style={{fontSize:13,color:"#93c5fd",fontWeight:"bold"}}>Editing saved round</div>
+                  <div style={{fontSize:11,color:"#60a5fa"}}>{courseName||"Unnamed Course"}</div>
+                </div>
+                <button onClick={()=>{setEditingRoundId(null);clearRound();}} style={{background:"transparent",border:"1px solid #3b6ea8",borderRadius:8,color:"#93c5fd",cursor:"pointer",padding:"6px 10px",fontSize:11,fontFamily:"Georgia,serif"}}>Cancel</button>
+              </div>
+            )}
+            {!editingRoundId&&Object.keys(scores).length>0&&(
               <div style={{background:"#162816",border:"1px solid #2d5a2d",borderRadius:10,padding:"10px 16px",marginBottom:12,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                 <div style={{fontSize:13,color:WHITE,fontWeight:"bold"}}>Round in progress - {Object.keys(scores).length} holes</div>
                 <div style={{fontSize:11,color:GREEN}}>Auto-saved</div>
@@ -800,7 +848,7 @@ function App(){
                     <div>
                       <div style={{fontSize:10,letterSpacing:3,color:WHITE,textTransform:"uppercase",marginBottom:4}}>Approach Result</div>
                       <div style={{fontSize:10,color:"#86efac",marginBottom:8}}>Select all that apply</div>
-                      <div style={{display:"flex",gap:6}}>
+                      <div style={{display:"flex",gap:6,marginBottom:6}}>
                         {["L","R","S","L+","Hit"].map(opt=>{
                           const sel=holeGrn.includes(opt);
                           return (
@@ -810,10 +858,16 @@ function App(){
                           );
                         })}
                       </div>
-                      {holeGrn.length>0&&!holeGrn.includes("Hit")&&(
+                      <button onClick={()=>handleGrn(hole,"LU")} style={{width:"100%",padding:"7px 4px",borderRadius:8,border:"1px solid "+(holeGrn.includes("LU")?GRN_COLOR["LU"]:"#2d5a2d"),background:holeGrn.includes("LU")?GRN_COLOR["LU"]+"33":"#0d1a0d",color:holeGrn.includes("LU")?GRN_COLOR["LU"]:WHITE,cursor:"pointer",fontSize:11,fontFamily:"Georgia,serif",fontWeight:holeGrn.includes("LU")?"bold":"normal"}}>
+                        Lay-Up (green wasn't on)
+                      </button>
+                      {holeGrn.length>0&&!holeGrn.includes("Hit")&&!holeGrn.includes("LU")&&(
                         <div style={{marginTop:6,fontSize:11,color:"#14532d",fontWeight:"bold"}}>
-                          Missed: {holeGrn.map(v=>v==="L"?"Left":v==="R"?"Right":v==="S"?"Short":"Long").join(" + ")}
+                          Missed: {holeGrn.filter(v=>v!=="LU").map(v=>v==="L"?"Left":v==="R"?"Right":v==="S"?"Short":"Long").join(" + ")}
                         </div>
+                      )}
+                      {holeGrn.includes("LU")&&(
+                        <div style={{marginTop:6,fontSize:11,color:"#60a5fa",fontWeight:"bold"}}>Lay-up recorded — not counted vs GIR</div>
                       )}
                     </div>
                     <div>
@@ -859,7 +913,7 @@ function App(){
                 <div style={{fontSize:36,fontWeight:"bold",color:YELLOW}}>⭐ {stats.totalStableford}</div>
               </div>
             )}
-            <button onClick={doSave} style={{...PBTN,marginTop:4}}>Save Round to My Stats</button>
+            <button onClick={doSave} style={{...PBTN,marginTop:4}}>{editingRoundId?"Update Round":"Save Round to My Stats"}</button>
             {saveMsg&&<div style={{textAlign:"center",color:saveMsg.includes("Error")?"#ef4444":GREEN,fontSize:13,marginTop:12,letterSpacing:1}}>{saveMsg}</div>}
             <button onClick={clearRound} style={{width:"100%",padding:"12px",marginTop:8,background:"transparent",border:"1px solid #3a1a1a",borderRadius:10,color:"#ef4444",cursor:"pointer",fontSize:11,letterSpacing:3,textTransform:"uppercase",fontFamily:"Georgia,serif"}}>Reset Round</button>
           </div>
@@ -881,6 +935,7 @@ function App(){
                   <div style={{fontSize:12,color:"#166534",marginTop:4}}>{savedRounds[viewRound].date}</div>
                 </div>
                 <StatsPanel s={savedRounds[viewRound].stats}/>
+                <button onClick={()=>doEditRound(savedRounds[viewRound])} style={{width:"100%",marginTop:16,padding:"12px",background:"#1a2f4a",border:"1px solid #3b6ea8",borderRadius:10,color:"#93c5fd",cursor:"pointer",fontSize:11,letterSpacing:3,textTransform:"uppercase",fontFamily:"Georgia,serif"}}>Edit This Round</button>
                 {confirmDelete===savedRounds[viewRound].id?(
                   <div style={{marginTop:16,textAlign:"center"}}>
                     <div style={{color:"#ef4444",fontSize:13,marginBottom:12}}>Delete this round?</div>
@@ -890,7 +945,7 @@ function App(){
                     </div>
                   </div>
                 ):(
-                  <button onClick={()=>setConfirmDelete(savedRounds[viewRound].id)} style={{width:"100%",marginTop:16,padding:"12px",background:"transparent",border:"1px solid #3a1a1a",borderRadius:10,color:"#ef4444",cursor:"pointer",fontSize:11,letterSpacing:3,textTransform:"uppercase",fontFamily:"Georgia,serif"}}>Delete This Round</button>
+                  <button onClick={()=>setConfirmDelete(savedRounds[viewRound].id)} style={{width:"100%",marginTop:8,padding:"12px",background:"transparent",border:"1px solid #3a1a1a",borderRadius:10,color:"#ef4444",cursor:"pointer",fontSize:11,letterSpacing:3,textTransform:"uppercase",fontFamily:"Georgia,serif"}}>Delete This Round</button>
                 )}
               </div>
             ):loadingRounds?(
@@ -909,7 +964,7 @@ function App(){
                         <div>
                           <div style={{fontSize:15,fontWeight:"bold",color:WHITE}}>{r.course}</div>
                           <div style={{fontSize:11,color:WHITE,marginTop:4}}>{r.date}</div>
-                          <div style={{fontSize:11,color:WHITE,marginTop:4}}><span style={{color:YELLOW,fontWeight:"bold"}}>{r.stats.holesScored||18} holes</span> · FWY {pct(r.stats.fwyHit,r.stats.fwyTotal)} - GIR {pct(r.stats.grnHit,r.stats.grnTotal)} - {r.stats.totalPutts} putts{r.stats.totalStableford?" - ⭐"+r.stats.totalStableford+"pts":""}</div>
+                          <div style={{fontSize:11,color:WHITE,marginTop:4}}><span style={{color:YELLOW,fontWeight:"bold"}}>{r.stats.holesScored||18} holes</span> · FWY {pct(r.stats.fwyHit,r.stats.fwyTotal)} - GIR {pct(r.stats.grnHit,r.stats.grnTotal)} - {r.stats.totalPutts} putts{r.stats.threePuttHoles>0?" (3+ putts on "+r.stats.threePuttHoles+" hole"+(r.stats.threePuttHoles!==1?"s":"")+")":" "}{r.stats.totalStableford?" - ⭐"+r.stats.totalStableford+"pts":""}</div>
                         </div>
                         <div style={{textAlign:"right",flexShrink:0,marginLeft:8}}>
                           <div style={{fontSize:22,fontWeight:"bold",color:rsd.color}}>{rsd.text}</div>
