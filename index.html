@@ -163,7 +163,7 @@ const Card=({children,style})=>(
   <div style={{background:CARD,border:"1px solid "+BORDER,borderRadius:12,padding:20,...style}}>{children}</div>
 );
 
-function StatsPanel({s}){
+function StatsPanel({s,notes}){
   const sd=sdDisplay(s.scoreDiff!=null?s.scoreDiff:s.avgScoreDiff);
   return (
     <div style={{display:"flex",flexDirection:"column",gap:16}}>
@@ -460,6 +460,19 @@ function CoachingTab(){
         <div style={{fontSize:12,color:WHITE,lineHeight:1.6,marginBottom:8}}>Claude AI is free to use at claude.ai — paste your stats and prompt for a full coaching breakdown in seconds.</div>
         <div style={{fontSize:11,color:"#2d5a2d"}}>claude.ai  ·  chatgpt.com</div>
       </Card>
+      {notes&&Object.keys(notes).filter(h=>notes[h]).length>0&&(
+        <Card>
+          <div style={{fontSize:11,letterSpacing:4,color:WHITE,textTransform:"uppercase",marginBottom:16}}>📝 Hole Notes</div>
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {Object.keys(notes).filter(h=>notes[h]).sort((a,b)=>Number(a)-Number(b)).map(h=>(
+              <div key={h} style={{display:"flex",gap:10,alignItems:"flex-start",background:"#60a5fa11",border:"1px solid #60a5fa22",borderRadius:8,padding:"8px 12px"}}>
+                <div style={{flexShrink:0,width:26,height:26,borderRadius:"50%",background:"#60a5fa22",border:"1px solid #60a5fa44",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:"bold",color:"#60a5fa"}}>{h}</div>
+                <div style={{fontSize:12,color:WHITE,lineHeight:1.5,paddingTop:4}}>{notes[h]}</div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
     </div>
   );
 }
@@ -532,6 +545,7 @@ function App(){
   const [nr,setNr]=useState(()=>ls("gs18_nr",{}));
   const [ob,setOb]=useState(()=>ls("gs18_ob",{}));
   const [hazard,setHazard]=useState(()=>ls("gs18_hazard",{}));
+  const [notes,setNotes]=useState(()=>ls("gs18_notes",{}));
   const [updown,setUpdown]=useState(()=>ls("gs18_updown",{}));
   const [pars,setPars]=useState(()=>ls("gs18_pars",DEFAULT_PARS));
   const [si,setSi]=useState(()=>ls("gs18_si",DEFAULT_SI));
@@ -582,6 +596,7 @@ function App(){
   useEffect(()=>{lss("gs18_nr",nr);},[nr]);
   useEffect(()=>{lss("gs18_ob",ob);},[ob]);
   useEffect(()=>{lss("gs18_hazard",hazard);},[hazard]);
+  useEffect(()=>{lss("gs18_notes",notes);},[notes]);
   useEffect(()=>{lss("gs18_updown",updown);},[updown]);
   useEffect(()=>{lss("gs18_pars",pars);},[pars]);
   useEffect(()=>{lss("gs18_si",si);},[si]);
@@ -606,13 +621,13 @@ function App(){
   const handleNR=(h)=>{setNr(p=>({...p,[h]:p[h]?undefined:true}));setScores(p=>({...p,[h]:undefined}));};
 
   const clearRound=()=>{
-    setFwy({});setFwy2({});setGrn({});setPutts({});setScores({});setNr({});setOb({});setHazard({});setUpdown({});setCourseName("");setHandicap("");
+    setFwy({});setFwy2({});setGrn({});setPutts({});setScores({});setNr({});setOb({});setHazard({});setNotes({});setUpdown({});setCourseName("");setHandicap("");
     ["gs18_fwy","gs18_fwy2","gs18_grn","gs18_putts","gs18_scores","gs18_nr","gs18_ob","gs18_hazard","gs18_updown","gs18_courseName","gs18_handicap"].forEach(lsr);
   };
 
   const doSave=async()=>{
     if(stats.holesScored===0&&stats.fwyTotal===0){setSaveMsg("Nothing to save yet!");setTimeout(()=>setSaveMsg(""),3000);return;}
-    const roundData={user_id:session.user.id,course:courseName||"Unnamed Course",stats,data:{fwy,fwy2,grn,putts,scores,nr,ob,hazard,updown,pars,handicap,si}};
+    const roundData={user_id:session.user.id,course:courseName||"Unnamed Course",stats,data:{fwy,fwy2,grn,putts,scores,nr,ob,hazard,notes,updown,pars,handicap,si}};
     if(editingRoundId){
       const {data,error}=await sb.from("rounds").update(roundData).eq("id",editingRoundId).select().single();
       if(error){setSaveMsg("Error updating - try again.");setTimeout(()=>setSaveMsg(""),3000);return;}
@@ -633,7 +648,7 @@ function App(){
   const doEditRound=(r)=>{
     const d=r.data||{};
     setFwy(d.fwy||{});setFwy2(d.fwy2||{});setGrn(d.grn||{});setPutts(d.putts||{});
-    setScores(d.scores||{});setNr(d.nr||{});setOb(d.ob||{});setHazard(d.hazard||{});
+    setScores(d.scores||{});setNr(d.nr||{});setOb(d.ob||{});setHazard(d.hazard||{});setNotes(d.notes||{});
     setUpdown(d.updown||{});setPars(d.pars||DEFAULT_PARS);setSi(d.si||DEFAULT_SI);
     setCourseName(r.course||"");setHandicap(d.handicap||"");
     setEditingRoundId(r.id);
@@ -799,6 +814,7 @@ function App(){
                     <div style={{marginLeft:"auto",display:"flex",gap:5,alignItems:"center",flexWrap:"wrap",justifyContent:"flex-end"}}>
                       {ob[hole]&&<span style={{fontSize:10,background:"#ef444422",color:"#ef4444",padding:"2px 5px",borderRadius:20,border:"1px solid #ef444444",fontWeight:"bold"}}>⛔OOB</span>}
                       {hazard[hole]&&<span style={{fontSize:10,background:"#f9731622",color:"#f97316",padding:"2px 5px",borderRadius:20,border:"1px solid #f9731644",fontWeight:"bold"}}>⚠️Haz</span>}
+                      {notes[hole]&&<span style={{fontSize:10,background:"#60a5fa22",color:"#60a5fa",padding:"2px 5px",borderRadius:20,border:"1px solid #60a5fa44",fontWeight:"bold"}}>📝</span>}
                       {updown[hole]&&<span style={{fontSize:10,background:updown[hole]==="yes"?"#4ade8022":"#ef444422",color:updown[hole]==="yes"?"#4ade80":"#ef4444",padding:"2px 5px",borderRadius:20,border:"1px solid "+(updown[hole]==="yes"?"#4ade8044":"#ef444444"),fontWeight:"bold"}}>{updown[hole]==="yes"?"U&D✓":"U&D✗"}</span>}
                       {sfPts!=null&&hcp>0&&<span style={{fontSize:10,background:"#facc1522",color:YELLOW,padding:"2px 5px",borderRadius:20,border:"1px solid #facc1544",fontWeight:"bold"}}>⭐{sfPts}pts</span>}
                       {sp&&<span style={{fontSize:10,background:sp.color+"22",color:sp.color,padding:"2px 7px",borderRadius:20,border:"1px solid "+sp.color+"44",fontWeight:"bold"}}>{sp.label}</span>}
@@ -889,6 +905,13 @@ function App(){
                           {!ob[hole]&&!hazard[hole]&&<span style={{fontSize:10,color:"#5a8a5a"}}>none</span>}
                         </div>
                       </div>
+                      <input
+                        type="text"
+                        value={notes[hole]||""}
+                        onChange={e=>setNotes(p=>({...p,[hole]:e.target.value||undefined}))}
+                        placeholder="Note (wrong club, mental error…)"
+                        style={{...INP,width:"100%",marginTop:8,fontSize:12,padding:"9px 12px"}}
+                      />
                     </div>
                     {holeGrn.length>0&&!holeGrn.includes("Hit")&&(
                       <div>
@@ -922,7 +945,7 @@ function App(){
         {activeTab==="stats"&&(
           stats.holesPlayed===0
             ?<div style={{textAlign:"center",color:"#14532d",padding:40,fontSize:14,letterSpacing:2}}>No data yet - enter your round in the Scorecard tab</div>
-            :<StatsPanel s={stats}/>
+            :<StatsPanel s={stats} notes={notes}/>
         )}
 
         {activeTab==="history"&&(
@@ -934,7 +957,7 @@ function App(){
                   <div style={{fontSize:18,fontWeight:"bold",color:"#14532d"}}>{savedRounds[viewRound].course}</div>
                   <div style={{fontSize:12,color:"#166534",marginTop:4}}>{savedRounds[viewRound].date}</div>
                 </div>
-                <StatsPanel s={savedRounds[viewRound].stats}/>
+                <StatsPanel s={savedRounds[viewRound].stats} notes={savedRounds[viewRound].data?.notes}/>
                 <button onClick={()=>doEditRound(savedRounds[viewRound])} style={{width:"100%",marginTop:16,padding:"12px",background:"#1a2f4a",border:"1px solid #3b6ea8",borderRadius:10,color:"#93c5fd",cursor:"pointer",fontSize:11,letterSpacing:3,textTransform:"uppercase",fontFamily:"Georgia,serif"}}>Edit This Round</button>
                 {confirmDelete===savedRounds[viewRound].id?(
                   <div style={{marginTop:16,textAlign:"center"}}>
