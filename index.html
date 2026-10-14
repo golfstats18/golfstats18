@@ -391,7 +391,7 @@ function AuthScreen(){
   );
 }
 
-function CoachingTab(){
+function CoachingTab({notes}){
   const [copied,setCopied]=useState(null);
   const copy=(text,i)=>{
     if(navigator.clipboard){navigator.clipboard.writeText(text).then(()=>{setCopied(i);setTimeout(()=>setCopied(null),2000);});}
@@ -720,7 +720,7 @@ function App(){
 
       <div style={{maxWidth:700,margin:"0 auto",padding:"20px 16px"}}>
 
-        {activeTab==="coaching"&&<CoachingTab/>}
+        {activeTab==="coaching"&&<CoachingTab notes={notes}/>}
 
         {activeTab==="setup"&&(
           <div>
