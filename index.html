@@ -563,11 +563,12 @@ function App(){
   const [showCourseList,setShowCourseList]=useState(false);
   const [editingRoundId,setEditingRoundId]=useState(null);
 
+  const FREE_USERS=["golfstats18@gmail.com","dvlatkovic@outlook.com"];
   const checkTrial=(s)=>{
     if(!s?.user)return;
     const meta=s.user.user_metadata||{};
-    // Check subscription flag
-    if(meta.subscribed===true){setIsSubscribed(true);setTrialDaysLeft(999);return;}
+    // Check free users list or subscription flag
+    if(FREE_USERS.includes(s.user.email)||meta.subscribed===true){setIsSubscribed(true);setTrialDaysLeft(999);return;}
     // Check trial
     const trialStart=meta.trial_start;
     if(!trialStart){
